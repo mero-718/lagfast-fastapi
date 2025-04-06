@@ -10,3 +10,5 @@ pydantic
 pydantic-settings
 alembic
 pydantic[email]
+websockets
+python-socketio[asgi]

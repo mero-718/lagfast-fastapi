@@ -16,6 +16,55 @@ from jose import jwt, JWTError
 
 router = APIRouter()
 
+def get_username_from_token(authorization: str = Header(...)) -> str:
+    """
+    Extract and verify username from the authorization token.
+    
+    Parameters:
+    - authorization: Bearer token in the format 'Bearer <token>'
+    
+    Returns:
+    - username: The username extracted from the token
+    
+    Raises:
+    - HTTPException: If the token is invalid or expired
+    """
+    try:
+        # Check if authorization header is in correct format
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authorization header format"
+            )
+            
+        # Extract token
+        token = authorization.split(" ")[1]
+        
+        # Verify and decode token
+        try:
+            payload = verify_token(token)
+            username = payload.get("sub")
+            if not username:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token payload"
+                )
+            return username
+                
+        except JWTError as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=str(e)
+            )
+            
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
 @router.post("/auth/login", response_model=Token)
 async def login_for_access_token(
     user: UserLogin,
@@ -52,33 +101,8 @@ async def read_users_me(
     - User information if token is valid
     """
     try:
-        # Check if authorization header is in correct format
-        if not authorization.startswith("Bearer "):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authorization header format"
-            )
-            
-        # Extract token
-        token = authorization.split(" ")[1]
-        print('DDDDDDD', token)
+        username = get_username_from_token(authorization)
         
-        # Verify and decode token
-        try:
-            payload = verify_token(token)
-            username = payload.get("sub")
-            if not username:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token payload"
-                )
-                
-        except JWTError as e:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=str(e)
-            )
-            
         # Get user from database
         user = db.query(User).filter(User.username == username).first()
         if not user:

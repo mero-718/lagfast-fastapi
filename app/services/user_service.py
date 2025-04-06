@@ -13,8 +13,8 @@ class UserService:
         return db.query(User).filter(User.email == email).first()
     
     @staticmethod
-    def get_user_by_name(db: Session, useranme: str) -> User:
-        return db.query(User).filter(User.useranme == useranme).first()
+    def get_user_by_name(db: Session, username: str) -> User:
+        return db.query(User).filter(User.username == username).first()
 
     @staticmethod
     def get_users(db: Session, skip: int = 0, limit: int = 100) -> list[User]:
